@@ -14,13 +14,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         
-      - name: Install Rust
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
 
-      - name: Install Just
-        run: cargo install just
+      - name: Setup Just
+        uses: extractions/setup-just@v1
 
-      - run: just test
+      - name: Run Tests
+        run: just test
       
