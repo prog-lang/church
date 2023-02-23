@@ -19,11 +19,11 @@ impl ChurchParser {
     }
 
     pub fn pairs_to_ast(pairs: Pairs<Rule>) -> AST {
-        pairs
+        AST(pairs
             .into_iter()
             .filter(ChurchParser::is_not_eoi)
             .map(|pair| ChurchParser::declaration(pair.into_inner()))
-            .collect()
+            .collect())
     }
 
     fn is_not_eoi(pair: &Pair<Rule>) -> bool {
@@ -37,13 +37,13 @@ impl ChurchParser {
     fn declaration(pairs: Pairs<Rule>) -> Declaration {
         let mut declaration = Declaration {
             name: String::new(),
-            value: 0,
+            int: 0,
         };
 
         for pair in pairs {
             match pair.as_rule() {
                 Rule::ID => declaration.name = ChurchParser::id(pair),
-                Rule::INT => declaration.value = ChurchParser::int(pair),
+                Rule::INT => declaration.int = ChurchParser::int(pair),
                 _ => unreachable!(),
             }
         }
@@ -81,20 +81,20 @@ mod tests {
         }
 
         let got_ast = parse_result.unwrap();
-        let want_ast = vec![
+        let want_ast = AST(vec![
             Declaration {
                 name: "minus5".to_string(),
-                value: -5,
+                int: -5,
             },
             Declaration {
                 name: "zerO0".to_string(),
-                value: 0,
+                int: 0,
             },
             Declaration {
                 name: "meaning".to_string(),
-                value: 42,
+                int: 42,
             },
-        ];
+        ]);
         assert_eq!(got_ast, want_ast);
     }
 }
