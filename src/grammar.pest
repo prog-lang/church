@@ -1,0 +1,11 @@
+file = 
+ _{ SOI
+  ~ declaration*
+  ~ EOI
+  }
+
+declaration = { ID ~ "=" ~ INT ~ ";" }
+
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+INT = @{ "0" | ("-"? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) }
+ID = @{ ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
