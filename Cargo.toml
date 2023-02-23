@@ -10,6 +10,3 @@ leb128 = "0.2.5"
 pest = "2.0"
 pest_derive = "2.0"
 wasm-encoder = "0.24.1"
-
-[scripts]
-hello = "echo hello"
