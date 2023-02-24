@@ -1,11 +1,16 @@
 file = 
  _{ SOI
+  ~ module
   ~ declaration*
   ~ EOI
   }
 
+module = { "module" ~ UID ~ TUPLE ~ ";" }
 declaration = { ID ~ "=" ~ INT ~ ";" }
 
+COMMENT = _{ "{-" ~ (!"-}" ~ ANY)* ~ "-}" }
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 INT = @{ "0" | ("-"? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) }
 ID = @{ ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
+UID = @{ ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC* }
+TUPLE = { "(" ~ ")" | "(" ~ ID ~ ("," ~ ID)* ~ ")"}

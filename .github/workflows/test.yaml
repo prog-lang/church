@@ -23,5 +23,5 @@ jobs:
         uses: extractions/setup-just@v1
 
       - name: Run Tests
-        run: just test
+        run: cargo test && just test
       
