@@ -1,13 +1,13 @@
 [package]
 name = "church-lang"
-version = "0.1.0"
-authors = ["Viktor A. Rozenko Voitenko"]
+version = "0.1.1"
+authors = ["Viktor A. Rozenko Voitenko <sharp.vik@gmail.com>"]
 edition = "2021"
 description = "Church compiler - simple, safe, and fast"
-license-file = "LICENSE"
+license = "MIT"
 documentation = "https://github.com/prog-lang/church#readme"
-readme = "README.md"
 homepage = "https://github.com/prog-lang/church#readme"
+readme = "README.md"
 
 [dependencies]
 leb128 = "0.2.5"

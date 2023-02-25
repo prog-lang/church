@@ -4,5 +4,7 @@ install:
 compile: install
     church-lang ./ch/i32.ch > ./wasm/i32.wasm
 
-test: compile
+try:
     cd ./test && node test.js
+
+test: compile try
