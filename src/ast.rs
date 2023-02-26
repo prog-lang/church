@@ -121,8 +121,8 @@ impl From<Pairs<'_, Rule>> for ModuleHeader {
 
         for pair in pairs {
             match pair.as_rule() {
-                Rule::UID => module.name = parser::uid(pair),
-                Rule::TUPLE => module.exports = parser::exports(pair.into_inner()),
+                Rule::Name => module.name = parser::uid(pair),
+                Rule::tuple => module.exports = parser::exports(pair.into_inner()),
                 _ => unreachable!(),
             }
         }
@@ -137,8 +137,8 @@ impl From<Pairs<'_, Rule>> for Declaration {
 
         for pair in pairs {
             match pair.as_rule() {
-                Rule::ID => declaration.name = parser::id(pair),
-                Rule::INT => declaration.value = Value(parser::int(pair)),
+                Rule::name => declaration.name = parser::id(pair),
+                Rule::integer => declaration.value = Value(parser::int(pair)),
                 _ => unreachable!(),
             }
         }

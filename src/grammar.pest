@@ -5,12 +5,13 @@ file =
   ~ EOI
   }
 
-module = { "module" ~ UID ~ TUPLE ~ ";" }
-declaration = { ID ~ "=" ~ INT ~ ";" }
+module = { "module" ~ Name ~ tuple ~ ";" }
+Name = @{ ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC* }
+tuple = { "(" ~ ")" | "(" ~ name ~ ("," ~ name)* ~ ")"}
+
+declaration = { name ~ "=" ~ integer ~ ";" }
+integer = @{ "0" | ("-"? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) }
+name = @{ ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
 
 COMMENT = _{ "{-" ~ (!"-}" ~ ANY)* ~ "-}" }
 WHITESPACE = _{ " " | "\t" | NEWLINE }
-INT = @{ "0" | ("-"? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) }
-ID = @{ ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
-UID = @{ ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC* }
-TUPLE = { "(" ~ ")" | "(" ~ ID ~ ("," ~ ID)* ~ ")"}
