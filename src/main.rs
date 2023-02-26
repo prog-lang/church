@@ -4,6 +4,7 @@ extern crate pest_derive;
 
 mod ast;
 mod parser;
+mod types;
 
 use std::{
     fs,
