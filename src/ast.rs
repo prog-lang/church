@@ -8,6 +8,7 @@ use wasm_encoder::{
 
 use crate::parser;
 use crate::parser::Rule;
+use crate::types::{self, Type};
 
 #[derive(Default, Debug, PartialEq)]
 pub struct AST {
@@ -144,5 +145,102 @@ impl From<Pairs<'_, Rule>> for Declaration {
         }
 
         declaration
+    }
+}
+
+enum Expr {
+    I32(i32),
+    Name(String),
+    Func(String, Box<Expr>), //* name -> Expr
+}
+
+impl types::Match for Expr {
+    fn check_type(&self, env: &types::Env, want: Type) -> Result<(), Type> {
+        match self {
+            Self::I32(_) => {
+                if want == Type::I32 {
+                    Ok(())
+                } else {
+                    Err(Type::I32)
+                }
+            }
+            Self::Name(id) => {
+                let got = env.get(id).map_or(Type::Unknown, |t| t.clone());
+                if want == got {
+                    Ok(())
+                } else {
+                    Err(got)
+                }
+            }
+            Self::Func(param, expr) => match want {
+                Type::Func(param_type, expr_type) => {
+                    let mut env_ = env.clone();
+                    env_.insert(param.clone(), param_type.as_ref().clone());
+                    match expr.check_type(&env_, expr_type.as_ref().clone()) {
+                        Err(got) => Err(Type::Func(param_type, got.into())),
+                        ok => ok,
+                    }
+                }
+                _ => Err(Type::Func(Type::Unknown.into(), Type::Unknown.into())),
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Match;
+
+    #[test]
+    fn it_works() {
+        assert!(Expr::I32(0).check_type(&HashMap::new(), Type::I32).is_ok());
+
+        assert!(Expr::Name("a".to_string())
+            .check_type(&HashMap::from([("a".to_string(), Type::I32)]), Type::I32)
+            .is_ok());
+
+        assert!(Expr::Func("a".to_string(), Expr::I32(0).into()) //* a -> 0
+            .check_type(
+                &HashMap::new(),
+                Type::Func(Type::Unknown.into(), Type::I32.into())
+            )
+            .is_ok());
+
+        assert!(
+            Expr::Func("a".to_string(), Expr::Name("a".to_string()).into()) //* a -> a
+                .check_type(
+                    &HashMap::new(),
+                    Type::Func(Type::I32.into(), Type::I32.into())
+                )
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn it_catches_errors() {
+        assert!(Expr::I32(0)
+            .check_type(
+                &HashMap::new(),
+                Type::Func(Box::new(Type::I32), Box::new(Type::I32))
+            )
+            .is_err());
+
+        assert!(Expr::Name("a".to_string())
+            .check_type(
+                &HashMap::from([("a".to_string(), Type::Unknown)]),
+                Type::I32
+            )
+            .is_err());
+
+        assert_eq!(
+            Expr::Func("a".to_string(), Box::new(Expr::Name("b".to_string())))
+                .check_type(
+                    &HashMap::from([("a".to_string(), Type::I32)]),
+                    Type::Func(Box::new(Type::I32), Box::new(Type::I32))
+                )
+                .unwrap_err(),
+            Type::Func(Type::I32.into(), Type::Unknown.into()),
+        );
     }
 }
