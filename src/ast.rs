@@ -32,14 +32,14 @@ impl TryFrom<Pairs<'_, Rule>> for AST {
             ast.declaration(pair);
         }
 
-        Ok(ast)
+        ast.validate().map(|_| ast)
     }
 }
 
 impl AST {
     fn declaration(&mut self, pair: Pair<Rule>) {
         match pair.as_rule() {
-            Rule::module => self.module = Header::from(pair.into_inner()),
+            Rule::module => self.module = pair.into_inner().into(),
             Rule::declaration => self.decls.push(pair.into_inner().into()),
             _ => unreachable!(),
         }
@@ -131,66 +131,40 @@ impl types::Match for Expr {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::Match;
-    use std::collections::HashMap;
-
-    #[test]
-    fn it_works() {
-        assert!(Expr::I32(0).check_type(&HashMap::new(), Type::I32).is_ok());
-
-        assert!(Expr::Name("a".to_string())
-            .check_type(&HashMap::from([("a".to_string(), Type::I32)]), Type::I32)
-            .is_ok());
-
-        assert!(Expr::Func("a".to_string(), Expr::I32(0).into()) //* a -> 0
-            .check_type(
-                &HashMap::new(),
-                Type::Func(Type::Unknown.into(), Type::I32.into())
-            )
-            .is_ok());
-
-        assert!(
-            Expr::Func("a".to_string(), Expr::Name("a".to_string()).into()) //* a -> a
-                .check_type(
-                    &HashMap::new(),
-                    Type::Func(Type::I32.into(), Type::I32.into())
-                )
-                .is_ok()
-        );
-    }
-
-    #[test]
-    fn it_catches_errors() {
-        assert!(Expr::I32(0)
-            .check_type(
-                &HashMap::new(),
-                Type::Func(Box::new(Type::I32), Box::new(Type::I32))
-            )
-            .is_err());
-
-        assert!(Expr::Name("a".to_string())
-            .check_type(
-                &HashMap::from([("a".to_string(), Type::Unknown)]),
-                Type::I32
-            )
-            .is_err());
-
-        assert_eq!(
-            Expr::Func("a".to_string(), Box::new(Expr::Name("b".to_string())))
-                .check_type(
-                    &HashMap::from([("a".to_string(), Type::I32)]),
-                    Type::Func(Box::new(Type::I32), Box::new(Type::I32))
-                )
-                .unwrap_err(),
-            Type::Func(Type::I32.into(), Type::Unknown.into()),
-        );
+trait Valid {
+    type Error;
+    fn validate(&self) -> Result<(), Self::Error>;
+    fn is_valid(&self) -> bool {
+        self.validate().is_ok()
     }
 }
 
-/* AST -> WASM */
+impl Valid for AST {
+    type Error = String;
+
+    fn validate(&self) -> Result<(), Self::Error> {
+        self.is_valid_exports()
+    }
+}
+
+//* for Valid
+impl AST {
+    fn is_valid_exports(&self) -> Result<(), String> {
+        let declared_names: HashSet<String> = self.decls.iter().map(|d| d.name.clone()).collect();
+        let undeclared_export_names: Vec<&String> =
+            self.module.exports.difference(&declared_names).collect();
+        if undeclared_export_names.is_empty() {
+            Ok(())
+        } else {
+            Err(format!(
+                "module '{}' attempts to export undeclared name(s):\n{:#?}",
+                self.module.name, undeclared_export_names,
+            ))
+        }
+    }
+}
+
+//* AST -> WASM
 impl Into<Vec<u8>> for AST {
     fn into(self) -> Vec<u8> {
         let mut module = Module::new();
@@ -229,5 +203,91 @@ impl Into<Vec<u8>> for AST {
         module.section(&exports);
         module.section(&codes);
         module.finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Match;
+    use std::collections::HashMap;
+
+    #[test]
+    fn is_valid_works() {
+        assert!(AST {
+            module: Header {
+                name: "main".to_string(),
+                exports: HashSet::from(["main".to_string()]),
+            },
+            decls: vec![Decl {
+                name: "main".to_string(),
+                expr: Expr::I32(42)
+            }],
+        }
+        .is_valid());
+    }
+
+    #[test]
+    fn is_valid_catches_errors() {
+        assert!(!AST {
+            module: Header {
+                name: "main".to_string(),
+                exports: HashSet::from(["main".to_string()]), // ! Undeclared export.
+            },
+            decls: vec![],
+        }
+        .is_valid());
+    }
+
+    #[test]
+    fn types_match_works() {
+        assert!(Expr::I32(0).check_type(&HashMap::new(), Type::I32).is_ok());
+
+        assert!(Expr::Name("a".to_string())
+            .check_type(&HashMap::from([("a".to_string(), Type::I32)]), Type::I32)
+            .is_ok());
+
+        assert!(Expr::Func("a".to_string(), Expr::I32(0).into()) //* a -> 0
+            .check_type(
+                &HashMap::new(),
+                Type::Func(Type::Unknown.into(), Type::I32.into())
+            )
+            .is_ok());
+
+        assert!(
+            Expr::Func("a".to_string(), Expr::Name("a".to_string()).into()) //* a -> a
+                .check_type(
+                    &HashMap::new(),
+                    Type::Func(Type::I32.into(), Type::I32.into())
+                )
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn types_match_catches_errors() {
+        assert!(Expr::I32(0)
+            .check_type(
+                &HashMap::new(),
+                Type::Func(Box::new(Type::I32), Box::new(Type::I32))
+            )
+            .is_err());
+
+        assert!(Expr::Name("a".to_string())
+            .check_type(
+                &HashMap::from([("a".to_string(), Type::Unknown)]),
+                Type::I32
+            )
+            .is_err());
+
+        assert_eq!(
+            Expr::Func("a".to_string(), Box::new(Expr::Name("b".to_string())))
+                .check_type(
+                    &HashMap::from([("a".to_string(), Type::I32)]),
+                    Type::Func(Box::new(Type::I32), Box::new(Type::I32))
+                )
+                .unwrap_err(),
+            Type::Func(Type::I32.into(), Type::Unknown.into()),
+        );
     }
 }
