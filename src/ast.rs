@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use pest::iterators::{Pair, Pairs};
 use wasm_encoder::{
@@ -135,6 +135,7 @@ impl types::Match for Expr {
 mod tests {
     use super::*;
     use crate::types::Match;
+    use std::collections::HashMap;
 
     #[test]
     fn it_works() {
