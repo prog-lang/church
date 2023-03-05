@@ -1,7 +1,7 @@
 const assert = require("assert");
 const fs = require("fs/promises");
 
-const wasm = fs.readFile("../wasm/i32.wasm").then((bytes) =>
+const init = fs.readFile("../wasm/i32.wasm").then((bytes) =>
   WebAssembly.instantiate(bytes, {
     /* NO IMPORTS */
   })
@@ -9,7 +9,7 @@ const wasm = fs.readFile("../wasm/i32.wasm").then((bytes) =>
 
 (async () => {
   let unexported;
-  const vm = await wasm;
+  const vm = await init;
   assert(vm.instance.exports.magic() === 42);
   assert(vm.instance.exports.minus1() === -1);
   assert(vm.instance.exports.zero === unexported);
@@ -17,5 +17,16 @@ const wasm = fs.readFile("../wasm/i32.wasm").then((bytes) =>
 })();
 
 module.exports = {
-  wasm,
+  init,
 };
+
+/* 
+ ? PLAY IN INTERACTIVE MODE:
+ * $ cd test && node
+ * > const test = require('./test')
+   undefined
+ * > const vm = await test.init
+   undefined
+ * > vm.instance.exports.magic()
+   42
+ */
