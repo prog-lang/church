@@ -1,10 +1,10 @@
 install:
     cargo install --path .
 
-compile: install
+compile:
     church-lang ./ch/i32.ch > ./wasm/i32.wasm
 
 try:
     cd ./test && node test.js
 
-test: compile try
+test: install compile try

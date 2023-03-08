@@ -4,6 +4,7 @@ extern crate pest_derive;
 
 mod ast;
 mod parser;
+mod types;
 
 use std::{
     fs,
@@ -19,12 +20,12 @@ fn main() {
     let src = fs::read_to_string(path).expect("failed to read source file");
     let parsed = ChurchParser::parse(Rule::file, &src);
     if let Err(syntax_error) = parsed {
-        println!("Syntax error:\n{}", syntax_error);
+        eprintln!("Syntax error:\n{}", syntax_error);
         return;
     }
     let ast = AST::try_from(parsed.unwrap());
     if let Err(semantic_error) = ast {
-        println!("Semantic error:\n{}", semantic_error);
+        eprintln!("Semantic error:\n{}", semantic_error);
         return;
     }
     stdout()
