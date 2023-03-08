@@ -44,6 +44,15 @@ impl AST {
             _ => unreachable!(),
         }
     }
+
+    fn get_expr_index_by_name(&self, name: &String) -> usize {
+        self.decls
+            .iter()
+            .enumerate()
+            .find(|(_, decl)| &decl.name == name)
+            .map(|(index, _)| index)
+            .unwrap()
+    }
 }
 
 impl From<Pairs<'_, Rule>> for Header {
@@ -70,7 +79,7 @@ impl From<Pairs<'_, Rule>> for Decl {
         for pair in pairs {
             match pair.as_rule() {
                 Rule::name => name = parser::id(pair),
-                Rule::integer => expr = Expr::I32(parser::int(pair)),
+                Rule::expression => expr = pair.into_inner().into(),
                 _ => unreachable!(),
             }
         }
@@ -91,7 +100,18 @@ impl types::Match for Decl {
     }
 }
 
-#[derive(Debug, PartialEq)]
+impl From<Pairs<'_, Rule>> for Expr {
+    fn from(mut pairs: Pairs<Rule>) -> Self {
+        let pair = pairs.next().unwrap();
+        match pair.as_rule() {
+            Rule::integer => Expr::I32(parser::int(pair)),
+            Rule::name => Expr::Name(parser::id(pair)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 enum Expr {
     I32(i32),                //* -42
     Name(String),            //* x
@@ -189,8 +209,11 @@ impl Into<Vec<u8>> for AST {
         for decl in self.decls.iter() {
             let locals = vec![];
             let mut f = Function::new(locals);
-            match decl.expr {
-                Expr::I32(i) => f.instruction(&Instruction::I32Const(i)),
+            match &decl.expr {
+                Expr::I32(i) => f.instruction(&Instruction::I32Const(*i)),
+                Expr::Name(id) => {
+                    f.instruction(&Instruction::Call(self.get_expr_index_by_name(id) as u32))
+                }
                 _ => unreachable!(),
             };
             f.instruction(&Instruction::Return);

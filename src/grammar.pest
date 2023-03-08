@@ -9,7 +9,8 @@ module = { "module" ~ Name ~ tuple ~ ";" }
 Name = @{ ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC* }
 tuple = { "(" ~ ")" | "(" ~ name ~ ("," ~ name)* ~ ")"}
 
-declaration = { name ~ "=" ~ integer ~ ";" }
+declaration = { name ~ "=" ~ expression ~ ";" }
+expression = { integer | name }
 integer = @{ "0" | ("-"? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) }
 name = @{ ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
 
